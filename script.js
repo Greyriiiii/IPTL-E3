@@ -79,11 +79,49 @@ function editProduct(id) {
     displayProducts();
  }
 }
-// Delete product
+// Track the product to delete
+let productToDelete = null;
+
 function deleteProduct(id) {
-products = products.filter(p => p.id !== id); 
-displayProducts();
+    // Set the product to delete
+    productToDelete = id;
+
+    // Show the modal
+    const deleteModal = document.getElementById('deleteModal');
+    deleteModal.style.display = 'flex';
 }
+
+// Handle Confirm and Cancel
+document.getElementById('confirmDelete').addEventListener('click', () => {
+    if (productToDelete !== null) {
+        // Remove the product
+        products = products.filter(p => p.id !== productToDelete);
+
+        // Refresh the product list
+        displayProducts();
+
+        // Reset the tracker
+        productToDelete = null;
+    }
+
+    // Close the modal
+    document.getElementById('deleteModal').style.display = 'none';
+
+    // Feedback
+    alert("Product deleted successfully!");
+});
+
+document.getElementById('cancelDelete').addEventListener('click', () => {
+    // Reset the tracker
+    productToDelete = null;
+
+    // Close the modal
+    document.getElementById('deleteModal').style.display = 'none';
+
+    // Feedback
+    alert("Product deletion canceled.");
+});
+
 // Clear the form after submission
 function clearForm() {
     productName.value = ""; 
@@ -92,3 +130,94 @@ function clearForm() {
     productImage.value = "";
     imagePreview.style.display = 'none';
 }
+
+//For sorting
+const sortingHTML = `
+  <div class="sorting">
+    <button id="sortByName">Sort by Name</button>
+    <button id="sortByPrice">Sort by Price</button>
+    <input type="text" id="searchBar" placeholder="Search products...">
+  </div>
+`;
+
+const productDisplay = document.querySelector('.product-display');
+productDisplay.insertAdjacentHTML('afterbegin', sortingHTML);
+
+//Sorting functionality
+
+document.getElementById('sortByName').addEventListener('click', () => {
+    products.sort((a, b) => a.name.localeCompare(b.name));
+    displayProducts();
+  });
+  
+  document.getElementById('sortByPrice').addEventListener('click', () => {
+    products.sort((a, b) => a.price - b.price);
+    displayProducts();
+  });
+
+  //Search Function
+
+  document.getElementById('searchBar').addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase();
+    const filteredProducts = products.filter(product => 
+      product.name.toLowerCase().includes(query) || 
+      product.description.toLowerCase().includes(query)
+    );
+    displayProducts(filteredProducts);
+  });
+
+  
+  //Rating system
+
+  function displayProducts(filteredProducts = products) {
+    productList.innerHTML = '';
+    filteredProducts.forEach(product => {
+      const productItem = document.createElement('div');
+      productItem.classList.add('product-item');
+      productItem.innerHTML = `
+        <img src="${product.image}" alt="${product.name}">
+        <div class="product-info">
+          <h3>${product.name}</h3>
+          <p>${product.description}</p>
+          <p>$${product.price}</p>
+          <div class="rating" data-id="${product.id}">
+            ${Array.from({ length: 5 }, (_, i) => `<span class="star" data-value="${i + 1}">&#9734;</span>`).join('')}
+          </div>
+          <button onclick="editProduct(${product.id})">Edit</button>
+          <button onclick="deleteProduct(${product.id})">Delete</button>
+        </div>
+      `;
+      productList.appendChild(productItem);
+    });
+    setupRatings();
+  }
+  
+  function setupRatings() {
+    document.querySelectorAll('.rating').forEach(ratingEl => {
+      const productId = parseInt(ratingEl.dataset.id);
+      const stars = ratingEl.querySelectorAll('.star');
+  
+      stars.forEach(star => {
+        star.addEventListener('click', () => {
+          const rating = parseInt(star.dataset.value);
+          const product = products.find(p => p.id === productId);
+          product.rating = rating;
+          updateStarDisplay(ratingEl, rating);
+          alert("Thank you for the rating!")
+        });
+      });
+  
+      const product = products.find(p => p.id === productId);
+      if (product.rating) {
+        updateStarDisplay(ratingEl, product.rating);
+      }
+    });
+  }
+  
+  function updateStarDisplay(ratingEl, rating) {
+    const stars = ratingEl.querySelectorAll('.star');
+    stars.forEach((star, index) => {
+      star.innerHTML = index < rating ? '&#9733;' : '&#9734;';
+    });
+  }
+  
